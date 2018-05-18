@@ -180,10 +180,6 @@ class Leaflet:
 
 		sliderControl = window.L.control.sliderControl(para)
 
-
-		#sliderControl.options.markers.sort(lambda a, b: a.properties.time > b.properties.time)
-
-
 		self.map.addControl(sliderControl)
 		sliderControl.startSlider()
 
@@ -279,5 +275,4 @@ make_cb('2018-05-17_P3', '#ff0000')
 make_cb('2018-05-16_P3', '#00ff00')
 make_cb('2018-05-15_P3', '#0000ff')
 
-Button('#nav', 'btn1', 'slider', lambda : map.refresh_slider())
 
