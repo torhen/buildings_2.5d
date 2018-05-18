@@ -107,14 +107,14 @@ class Leaflet:
 		self.map.addControl( controlSearch )
 
 	def add_to_slider_layer(self, layer_name, url, color):
-		""" add all markers one by one to the slider_layer_group"""
+		""" add all markers one by one to the dictionary"""
 
 		self.slider_marker_dict[layer_name] = []
 
 		S.getJSON(url,  lambda json: my_callback(json) )
 
 		def my_callback(json):
-			# add markes to slider_marker_dict
+			# add data of markers to slider_marker_dict, create time defines the order!!!
 			i=0
 			self.slider_marker_dict[layer_name] = []
 			for feat in json.features:
@@ -124,31 +124,43 @@ class Leaflet:
 				opt = {}
 				opt['radius'] = 4
 				opt['color'] = color
-				opt['time'] = f'marker #{i}'
+				opt['time'] = f'{layer_name} #{i}'
 
-				marker = window.L.circleMarker([lat, lon], opt).bindPopup('text')
-				#marker.addTo(self.slider_layer_group)
+				marker_data = {
+					'lon' : lon,
+					'lat' : lat,
+					'color' : color,
+					'time' : f'{layer_name} #{i}',
+					'info' : 'test_info',
+					'opt' : opt
+				}
 
-				# save them in dictionary so we can remove the markers
-				self.slider_marker_dict[layer_name].append(marker)
+				self.slider_marker_dict[layer_name].append(marker_data)
 
 			self.redraw_slider_layer()
 			
 	def redraw_slider_layer(self):
 		# empty the slider_layer_group
-		self.slider_layer_group.clearLayers()
+		#self.slider_layer_group.clearLayers()
+
+		self.map.removeLayer(self.slider_layer_group)
+		self.slider_layer_group = window.L.layerGroup()
+		self.slider_layer_group.addTo(self.map)
+
 
 		# add the marker to the slider_layer_group, in the right order
-		sorted_keys = sorted(self.slider_marker_dict.keys())
+		sorted_keys = self.slider_marker_dict.keys()
+		sorted_keys.sort()
 		i = 0
 		for key in sorted_keys:
 			marker_list = self.slider_marker_dict[key]
-			for marker in marker_list:
+			for marker_data in marker_list:
 				i = i + 1
+				marker = window.L.circleMarker([marker_data.lat, marker_data.lon], marker_data.opt).bindPopup('text')
 				marker.addTo(self.slider_layer_group)
 
 		self.refresh_slider()
-	
+
 
 
 	def remove_slider_marker(self, layer_name):
@@ -167,6 +179,11 @@ class Leaflet:
 
 
 		sliderControl = window.L.control.sliderControl(para)
+
+
+		#sliderControl.options.markers.sort(lambda a, b: a.properties.time > b.properties.time)
+
+
 		self.map.addControl(sliderControl)
 		sliderControl.startSlider()
 
