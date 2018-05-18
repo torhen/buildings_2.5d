@@ -106,11 +106,15 @@ class Leaflet:
 		controlSearch = window.L.control.search(para)
 		self.map.addControl( controlSearch )
 
-	def add_slider_layer(self, layer_name, url, color):
+	def add_to_slider_layer(self, layer_name, url, color):
 		""" add all markers one by one to the slider_layer_group"""
+
+		self.slider_marker_dict[layer_name] = []
+
 		S.getJSON(url,  lambda json: my_callback(json) )
 
 		def my_callback(json):
+			# add markes to slider_marker_dict
 			i=0
 			self.slider_marker_dict[layer_name] = []
 			for feat in json.features:
@@ -123,37 +127,48 @@ class Leaflet:
 				opt['time'] = f'marker #{i}'
 
 				marker = window.L.circleMarker([lat, lon], opt).bindPopup('text')
-				marker.addTo(self.slider_layer_group)
+				#marker.addTo(self.slider_layer_group)
 
 				# save them in dictionary so we can remove the markers
 				self.slider_marker_dict[layer_name].append(marker)
 
-			self.refresh_slider()
+			self.redraw_slider_layer()
+			
+	def redraw_slider_layer(self):
+		# empty the slider_layer_group
+		self.slider_layer_group.clearLayers()
+
+		# add the marker to the slider_layer_group, in the right order
+		sorted_keys = sorted(self.slider_marker_dict.keys())
+		i = 0
+		for key in sorted_keys:
+			marker_list = self.slider_marker_dict[key]
+			for marker in marker_list:
+				i = i + 1
+				marker.addTo(self.slider_layer_group)
+
+		self.refresh_slider()
+	
+
 
 	def remove_slider_marker(self, layer_name):
-		marker_list = map.slider_marker_dict[layer_name]
-		for marker in marker_list:
-			self.slider_layer_group.removeLayer(marker)
-		self.refresh_slider()
+		self.slider_marker_dict[layer_name] = []
+		self.redraw_slider_layer()
 
 	def refresh_slider(self):
 		""" delete slider if exists and buitd new from scratch"""
 		para = {
 			'position' : "topleft",
-			'layer' : map.slider_layer_group,
+			'layer' : self.slider_layer_group,
 			'range' : True,
 			'showAllOnStart': True
 
 		}
 
-		#delete stime slider if already exists
-		if self.sliderControl:
-			self.map.removeControl(map.sliderControl)
 
-		self.sliderControl = window.L.control.sliderControl(para)
-
-		self.map.addControl(map.sliderControl)
-		self.sliderControl.startSlider()
+		sliderControl = window.L.control.sliderControl(para)
+		self.map.addControl(sliderControl)
+		sliderControl.startSlider()
 
 class Button:
 	def __init__(self, dest, id, title, fkt_click):
@@ -238,7 +253,7 @@ def make_cb(layer_name, color):
 		id = f'cb_{layer_name}', 
 		title = f'{layer_name}', 
 		
-		fkt_check =  lambda : map.add_slider_layer(f'{layer_name}',f'track_data/P3/geojson/{layer_name}.geo.json', color=color),
+		fkt_check =  lambda : map.add_to_slider_layer(f'{layer_name}',f'track_data/P3/geojson/{layer_name}.geo.json', color=color),
 		fkt_uncheck = lambda : map.remove_slider_marker(f'{layer_name}')
 		)
 
@@ -246,3 +261,6 @@ def make_cb(layer_name, color):
 make_cb('2018-05-17_P3', '#ff0000')
 make_cb('2018-05-16_P3', '#00ff00')
 make_cb('2018-05-15_P3', '#0000ff')
+
+Button('#nav', 'btn1', 'slider', lambda : map.refresh_slider())
+
