@@ -111,9 +111,9 @@ class Leaflet:
 
 		self.slider_marker_dict[layer_name] = []
 
-		S.getJSON(url,  lambda json: my_callback(json) )
+		S.getJSON(url,  lambda json: call_back(json) )
 
-		def my_callback(json):
+		def call_back(json):
 			# add data of markers to slider_marker_dict, create time defines the order!!!
 			i=0
 			self.slider_marker_dict[layer_name] = []
@@ -121,17 +121,18 @@ class Leaflet:
 				i = i + 1
 				lon, lat = feat.geometry.coordinates
 
+
 				opt = {}
 				opt['radius'] = 4
 				opt['color'] = color
-				opt['time'] = f'{layer_name} #{i}'
+				opt['time'] = feat.properties.time
 
 				marker_data = {
 					'lon' : lon,
 					'lat' : lat,
 					'color' : color,
-					'time' : f'{layer_name} #{i}',
-					'info' : 'test_info',
+					'time' : feat.properties.time,
+					'info' : feat.properties.info,
 					'opt' : opt
 				}
 
@@ -156,7 +157,7 @@ class Leaflet:
 			marker_list = self.slider_marker_dict[key]
 			for marker_data in marker_list:
 				i = i + 1
-				marker = window.L.circleMarker([marker_data.lat, marker_data.lon], marker_data.opt).bindPopup('text')
+				marker = window.L.circleMarker([marker_data.lat, marker_data.lon], marker_data.opt).bindPopup(marker_data.info)
 				marker.addTo(self.slider_layer_group)
 
 		self.refresh_slider()
@@ -244,7 +245,7 @@ def create_checkbox(layer_name, url, color):
 		'fill': True,
 	}
 	Checkbox(
-		dest = '#nav', 
+		dest = '#overlays', 
 		id = 'cb_' + layer_name, 
 		title = f'<font color="{color}">&#x25C4;</font>{layer_name}', 
 		
@@ -260,19 +261,37 @@ for key in def_layers.keys():
 	color = def_layers[key][1]
 	create_checkbox(layer_name, url, color)
 
-def make_cb(layer_name, color):
+def make_cb(title, layer_name, color):
 	Checkbox(
-		dest = '#nav', 
+		dest = '#tracks', 
 		id = f'cb_{layer_name}', 
-		title = f'{layer_name}', 
+		title = title, 
 		
 		fkt_check =  lambda : map.add_to_slider_layer(f'{layer_name}',f'track_data/P3/geojson/{layer_name}.geo.json', color=color),
 		fkt_uncheck = lambda : map.remove_slider_marker(f'{layer_name}')
 		)
 
+def make_all_track_checkbox(json):
+	for item in json:
+		layer_name = item.base
 
-make_cb('2018-05-17_P3', '#ff0000')
-make_cb('2018-05-16_P3', '#00ff00')
-make_cb('2018-05-15_P3', '#0000ff')
+		weekday = int(item.weekday)
+
+		lcolors = ['red',  'orange', 'green', 'blue', 'purple', 'violet', 'yellow']
+		color = lcolors[weekday]
+
+		if int(item.weekday) >= 5:
+			title = f"<b>{item.base} ({item.call_count})</b>"
+		else:
+			title = f"{item.base} ({item.call_count})"			
+
+		make_cb(title, layer_name, color)
+
+
+S.getJSON('track_data/P3/geojson/_index.json', make_all_track_checkbox)
+
+
+
+
 
 
