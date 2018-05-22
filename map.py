@@ -255,7 +255,7 @@ def_layers = {
 	'Builtouts' : ['data/builtouts.json'    , '#ff0000']
 }
 
-def create_checkbox(layer_name, url, color):
+def make_overlay_checkbox(layer_name, url, color):
 
 	style = {
 		'color':color,
@@ -273,15 +273,13 @@ def create_checkbox(layer_name, url, color):
 		fkt_uncheck = lambda : map.remove_layer(layer_name)
 		)
 
-
-
 for key in def_layers.keys():
 	layer_name = key
 	url = def_layers[key][0]
 	color = def_layers[key][1]
-	create_checkbox(layer_name, url, color)
+	make_overlay_checkbox(layer_name, url, color)
 
-def make_cb(title, folder, file_base, color):
+def make_track_checkbox(title, folder, file_base, color):
 	Checkbox(
 		dest = '#tracks', 
 		id = f'cb_{file_base}', 
@@ -306,7 +304,7 @@ def make_all_track_checkbox(folder, json):
 		else:
 			title = f"{item.base} ({item.call_count})"			
 
-		make_cb(title, folder, file_base, color)
+		make_track_checkbox(title, folder, file_base, color)
 
 def update_list_box(folder):
 	S('#tracks').empty()
