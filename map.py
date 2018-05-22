@@ -163,10 +163,14 @@ class Leaflet:
 		self.refresh_slider()
 
 
-
 	def remove_slider_marker(self, layer_name):
 		self.slider_marker_dict[layer_name] = []
 		self.redraw_slider_layer()
+
+	def empty_slider_layer(self):
+		self.slider_marker_dict = {}
+		self.redraw_slider_layer()
+
 
 	def refresh_slider(self):
 		""" delete slider if exists and buitd new from scratch"""
@@ -309,7 +313,7 @@ def make_all_track_checkbox(folder, json):
 def update_list_box(folder):
 	S('#tracks').empty()
 	S.getJSON(f'track_data/{folder}/geojson/_index.json', lambda json: make_all_track_checkbox(folder, json))
-
+	map.empty_slider_layer()
 
 Listbox(dest='#overlays', 
 	id='id_chooser', 
