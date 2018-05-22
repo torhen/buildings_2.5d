@@ -210,6 +210,26 @@ class Checkbox:
 		else:
 			self.fkt_uncheck()
 
+class Listbox:
+	def __init__(self, dest, id, options, fkt_change):
+		self.id = id
+		self.fkt_change = fkt_change
+		s = f'<select id="{id}" size="1" style="width:200px">'
+		for option in options:
+			s = s + f"<option>{option}</option>"
+		s = s + "</select><br>"
+		S(dest).append(s)
+		S('#' + self.id).change(self.onchange)
+		# trigger initial event
+		S('#' + self.id).trigger( "change")
+
+	def onchange(self, e):
+		selected = e.target.value
+		self.fkt_change(selected)
+		#self.fkt_change()
+
+
+
 
 map = Leaflet('map')
 map.set_view(8.23425, 46.81886, 8)
@@ -261,19 +281,20 @@ for key in def_layers.keys():
 	color = def_layers[key][1]
 	create_checkbox(layer_name, url, color)
 
-def make_cb(title, layer_name, color):
+def make_cb(title, folder, file_base, color):
 	Checkbox(
 		dest = '#tracks', 
-		id = f'cb_{layer_name}', 
+		id = f'cb_{file_base}', 
 		title = title, 
 		
-		fkt_check =  lambda : map.add_to_slider_layer(f'{layer_name}',f'track_data/P3/geojson/{layer_name}.geo.json', color=color),
-		fkt_uncheck = lambda : map.remove_slider_marker(f'{layer_name}')
+		fkt_check =  lambda : map.add_to_slider_layer(f'{file_base}',f'track_data/{folder}/geojson/{file_base}.geo.json', color=color),
+		fkt_uncheck = lambda : map.remove_slider_marker(f'{file_base}')
 		)
 
-def make_all_track_checkbox(json):
+def make_all_track_checkbox(folder, json):
+	# folder = 'P3'
 	for item in json:
-		layer_name = item.base
+		file_base = item.base
 
 		weekday = int(item.weekday)
 
@@ -285,10 +306,19 @@ def make_all_track_checkbox(json):
 		else:
 			title = f"{item.base} ({item.call_count})"			
 
-		make_cb(title, layer_name, color)
+		make_cb(title, folder, file_base, color)
+
+def update_list_box(folder):
+	S('#tracks').empty()
+	S.getJSON(f'track_data/{folder}/geojson/_index.json', lambda json: make_all_track_checkbox(folder, json))
 
 
-S.getJSON('track_data/P3/geojson/_index.json', make_all_track_checkbox)
+Listbox(dest='#overlays', 
+	id='id_chooser', 
+	options=['P3', 'test', 'chip'], 
+	fkt_change = lambda selected: update_list_box(selected)
+	)
+
 
 
 
