@@ -280,6 +280,7 @@ def make_all_overlay_checkbox(map, def_layers):
 			fkt_uncheck = lambda : map.remove_layer(layer_name)
 			)
 
+	S('#overlays').append('<h3>Sectors</h3>')
 	for key in def_layers.keys():
 		layer_name = key
 		url = def_layers[key][0]
@@ -321,6 +322,8 @@ def make_group_select(map):
 		S.getJSON(f'track_data/{folder}/geojson/_index.json', lambda json: make_all_track_checkbox(map, folder, json))
 		map.empty_slider_layer()
 
+	S('#overlays').append('<h4>Drivetests</h4>')
+
 	Listbox(dest='#overlays', 
 	id='id_chooser', 
 	options=['P3', 'test', 'chip'], 
@@ -342,8 +345,8 @@ def main():
 		'L1800'     : ['data/sectors_L1800.json', '#ff00ff'],
 		'L2100'     : ['data/sectors_L2100.json', '#99ff33'], 
 		'L2600'     : ['data/sectors_L2600.json', '#ffff00'],
-		'Community' : ['data/Community.json'    , '#000000'],
-		'Builtouts' : ['data/builtouts.json'    , '#ff0000']
+		# 'Community' : ['data/Community.json'    , '#000000'],
+		# 'Builtouts' : ['data/builtouts.json'    , '#ff0000']
 	}
 
 	map = Leaflet('map')
@@ -355,6 +358,8 @@ def main():
 	map.add_geojson_file('Sites', 'data/sites.json', {'color':'#d77d00'}, True)
 
 	make_all_overlay_checkbox(map, def_layers)
+
+
 	make_group_select(map)
 
 
