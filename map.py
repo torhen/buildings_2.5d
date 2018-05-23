@@ -141,7 +141,7 @@ class Leaflet:
 
 			self.redraw_slider_layer()
 
-		self.legend_dict[layer_name] = color
+		self.legend_dict[layer_name] = [color, url]
 		self.draw_legend()
 			
 	def redraw_slider_layer(self):
@@ -199,12 +199,17 @@ class Leaflet:
 	def draw_legend(self):
 		S('#legend').empty()
 		for key in sorted(self.legend_dict.keys()):
-			color = self.legend_dict[key]
+			color = self.legend_dict[key][0]
+			url = self.legend_dict[key][1]
+
+			pos = url.lower().find('track_data')
+			folder = url[pos:].split('/')[1]
+			console.log(folder)
 			s = f"<font color='{color}'>&#x26AB;</font> {key} "  # mediuum circle &#x26AB; full moon &#x1F311;
 
-			s += f'<a href="http://network/track/P3/csv/{key}.csv">csv</a> '
-			s += f'<a href="http://network/track/P3/ge/{key}.kml">kml</a> '
-			s += f'<a href="http://network/track/P3/tab/{key}.zip">tab</a><br>'
+			s += f'<a href="http://network/track/{folder}/csv/{key}.csv">csv</a> '
+			s += f'<a href="http://network/track/{folder}/ge/{key}.kml">kml</a> '
+			s += f'<a href="http://network/track/{folder}/tab/{key}.zip">tab</a><br>'
 
 
 			S('#legend').append(s)
@@ -321,7 +326,6 @@ def make_group_select(map):
 	options=['P3', 'test', 'chip'], 
 	fkt_change = lambda selected: update_list(selected)
 	)
-
 
 
 
