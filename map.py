@@ -23,6 +23,7 @@ class Leaflet:
 		self.slider_layer_group = window.L.layerGroup()
 		self.slider_layer_group.addTo(self.map)
 		self.slider_marker_dict = {}
+		self.legend_dict = {}
 
 	def add_tile_layer(self, name, url, gray=False, style={}):
 
@@ -139,6 +140,9 @@ class Leaflet:
 				self.slider_marker_dict[layer_name].append(marker_data)
 
 			self.redraw_slider_layer()
+
+		self.legend_dict[layer_name] = color
+		self.draw_legend()
 			
 	def redraw_slider_layer(self):
 		# empty the slider_layer_group
@@ -166,11 +170,14 @@ class Leaflet:
 	def remove_slider_marker(self, layer_name):
 		self.slider_marker_dict[layer_name] = []
 		self.redraw_slider_layer()
+		del self.legend_dict[layer_name]
+		self.draw_legend()
 
 	def empty_slider_layer(self):
 		self.slider_marker_dict = {}
 		self.redraw_slider_layer()
-
+		self.legend_dict = {}
+		self.draw_legend()
 
 	def refresh_slider(self):
 		""" delete slider if exists and buitd new from scratch"""
@@ -187,6 +194,21 @@ class Leaflet:
 
 		self.map.addControl(sliderControl)
 		sliderControl.startSlider()
+
+
+	def draw_legend(self):
+		S('#legend').empty()
+		for key in sorted(self.legend_dict.keys()):
+			color = self.legend_dict[key]
+			s = f"<font color='{color}'>&#x26AB;</font> {key} "  # mediuum circle &#x26AB; full moon &#x1F311;
+
+			s += f'<a href="http://network/track/P3/csv/{key}.csv">csv</a> '
+			s += f'<a href="http://network/track/P3/ge/{key}.kml">kml</a> '
+			s += f'<a href="http://network/track/P3/tab/{key}.zip">tab</a><br>'
+
+
+			S('#legend').append(s)
+			#console.log(s)
 
 class Button:
 	def __init__(self, dest, id, title, fkt_click):
@@ -234,73 +256,50 @@ class Listbox:
 
 
 
+def make_all_overlay_checkbox(map, def_layers):
 
-map = Leaflet('map')
-map.set_view(8.23425, 46.81886, 8)
-map.add_tile_layer('off', 'data/empty.png', gray=False)
-map.add_tile_layer('toner', 'http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png', gray=False, style={'opacity':0.5})
-map.add_tile_layer('osm', 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',  gray=False)
-map.add_tile_layer('osm-gray', 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', gray=True)
-map.add_geojson_file('Sites', 'data/sites.json', {'color':'#d77d00'}, True)
+	def make_cb(map, layer_name, url, color):
+		style = {
+			'color':color,
+			'fillColor':color,
+			'fillOpacity':0.1,
+			'stroke': True,
+			'fill': True,
+		}
+		Checkbox(
+			dest = '#overlays', 
+			id = 'cb_' + layer_name, 
+			title = f'<font color="{color}">&#x25C4;</font>{layer_name}', 
+			
+			fkt_check = lambda : map.add_vectorgrid_file(layer_name, url, style), 
+			fkt_uncheck = lambda : map.remove_layer(layer_name)
+			)
+
+	for key in def_layers.keys():
+		layer_name = key
+		url = def_layers[key][0]
+		color = def_layers[key][1]
+		make_cb(map, layer_name, url, color)
 
 
-def_layers = {
-	#'Sites'     : ['sites/sites.json', '#ff7800'],
-	'G0900'     : ['data/sectors_G0900.json', '#ff0000'],
-	'G1800'     : ['data/sectors_G1800.json', '#ff00ff'], 
-	'U0900'     : ['data/sectors_U0900.json', '#0000ff'], 
-	'U2100'     : ['data/sectors_U2100.json', '#00ffff'], 
-	'L0800'     : ['data/sectors_L0800.json', '#008000'], 
-	'L0900'     : ['data/sectors_L0900.json', '#009000'], 
-	'L1800'     : ['data/sectors_L1800.json', '#ff00ff'],
-	'L2100'     : ['data/sectors_L2100.json', '#99ff33'], 
-	'L2600'     : ['data/sectors_L2600.json', '#ffff00'],
-	'Community' : ['data/Community.json'    , '#000000'],
-	'Builtouts' : ['data/builtouts.json'    , '#ff0000']
-}
+def make_all_track_checkbox(map, folder, json):
 
-def make_overlay_checkbox(layer_name, url, color):
-
-	style = {
-		'color':color,
-		'fillColor':color,
-		'fillOpacity':0.1,
-		'stroke': True,
-		'fill': True,
-	}
-	Checkbox(
-		dest = '#overlays', 
-		id = 'cb_' + layer_name, 
-		title = f'<font color="{color}">&#x25C4;</font>{layer_name}', 
-		
-		fkt_check = lambda : map.add_vectorgrid_file(layer_name, url, style), 
-		fkt_uncheck = lambda : map.remove_layer(layer_name)
-		)
-
-for key in def_layers.keys():
-	layer_name = key
-	url = def_layers[key][0]
-	color = def_layers[key][1]
-	make_overlay_checkbox(layer_name, url, color)
-
-def make_track_checkbox(title, folder, file_base, color):
-	Checkbox(
-		dest = '#tracks', 
-		id = f'cb_{file_base}', 
-		title = title, 
-		
-		fkt_check =  lambda : map.add_to_slider_layer(f'{file_base}',f'track_data/{folder}/geojson/{file_base}.geo.json', color=color),
-		fkt_uncheck = lambda : map.remove_slider_marker(f'{file_base}')
-		)
-
-def make_all_track_checkbox(folder, json):
+	def make_cb(title, folder, file_base, color):
+		Checkbox(
+			dest = '#tracks', 
+			id = f'cb_{file_base}', 
+			title = title, 
+			
+			fkt_check =  lambda : map.add_to_slider_layer(f'{file_base}',f'track_data/{folder}/geojson/{file_base}.geo.json', color=color),
+			fkt_uncheck = lambda : map.remove_slider_marker(f'{file_base}')
+			)
 	# folder = 'P3'
 	for item in json:
 		file_base = item.base
 
 		weekday = int(item.weekday)
 
-		lcolors = ['red',  'orange', 'green', 'blue', 'purple', 'violet', 'yellow']
+		lcolors = ['red',  'crimson', 'green', 'blue', 'purple', 'lime', 'cyan']
 		color = lcolors[weekday]
 
 		if int(item.weekday) >= 5:
@@ -308,22 +307,55 @@ def make_all_track_checkbox(folder, json):
 		else:
 			title = f"{item.base} ({item.call_count})"			
 
-		make_track_checkbox(title, folder, file_base, color)
+		make_cb(title, folder, file_base, color)
 
-def update_list_box(folder):
-	S('#tracks').empty()
-	S.getJSON(f'track_data/{folder}/geojson/_index.json', lambda json: make_all_track_checkbox(folder, json))
-	map.empty_slider_layer()
+def make_group_select(map):
 
-Listbox(dest='#overlays', 
+	def update_list(folder):
+		S('#tracks').empty()
+		S.getJSON(f'track_data/{folder}/geojson/_index.json', lambda json: make_all_track_checkbox(map, folder, json))
+		map.empty_slider_layer()
+
+	Listbox(dest='#overlays', 
 	id='id_chooser', 
 	options=['P3', 'test', 'chip'], 
-	fkt_change = lambda selected: update_list_box(selected)
+	fkt_change = lambda selected: update_list(selected)
 	)
 
 
 
 
+def main():
+
+	def_layers = {
+		#'Sites'     : ['sites/sites.json', '#ff7800'],
+		'G0900'     : ['data/sectors_G0900.json', '#ff0000'],
+		'G1800'     : ['data/sectors_G1800.json', '#ff00ff'], 
+		'U0900'     : ['data/sectors_U0900.json', '#0000ff'], 
+		'U2100'     : ['data/sectors_U2100.json', '#00ffff'], 
+		'L0800'     : ['data/sectors_L0800.json', '#008000'], 
+		'L0900'     : ['data/sectors_L0900.json', '#009000'], 
+		'L1800'     : ['data/sectors_L1800.json', '#ff00ff'],
+		'L2100'     : ['data/sectors_L2100.json', '#99ff33'], 
+		'L2600'     : ['data/sectors_L2600.json', '#ffff00'],
+		'Community' : ['data/Community.json'    , '#000000'],
+		'Builtouts' : ['data/builtouts.json'    , '#ff0000']
+	}
+
+	map = Leaflet('map')
+	map.set_view(8.23425, 46.81886, 8)
+	map.add_tile_layer('off', 'data/empty.png', gray=False)
+	map.add_tile_layer('toner', 'http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png', gray=False, style={'opacity':0.5})
+	map.add_tile_layer('osm', 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',  gray=False)
+	map.add_tile_layer('osm-gray', 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', gray=True)
+	map.add_geojson_file('Sites', 'data/sites.json', {'color':'#d77d00'}, True)
+
+	make_all_overlay_checkbox(map, def_layers)
+	make_group_select(map)
+
+
+
+main()
 
 
 
